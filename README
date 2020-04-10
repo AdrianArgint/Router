@@ -1,0 +1,71 @@
+Adrian Argint 323CB
+
+-Tema 1 PC -
+
+Main-ul programului se afla in "router.c" care parseaza mai intai tabela de
+rutare din "rtable.txt", initializeaza tabela ARP la NULL si creeaza o coada a
+pachetelor care urmeaza a nu putea fi trimise direct. Imediat dupa partea de
+initializare urmeaza un ciclu infinit care asteapta pachete. La primirea unui
+pachet se verifica un ordine urmatoarele: - daca pachetul este destinat
+routerului: - daca pachetul este un echo request se trimite echo reply prin
+functia "send_icmp_packet" - altfel il arunca
+
+	- daca este un pachet de tip ARP - daca este REQUEST, atunci trimite ARP REPLY
+prin functie send_arp_reply - altfel insemna ca este REPLY si introduce perechea
+(IP, MAC) sursa in tabela ARP si incearca sa trimita pachetele ramase in coada
+prin "packet_send"
+
+ 	- daca TTL-ul este mai mic decat 2 sau checksum gresit, arunca pachetul
+
+ 	- daca nu se gaseste o intrare in tabela de rutare, se trimite un pachet de
+ 	- timp ICMP cu mesajul "host unreachable" prin functi "send_icmp_packet"
+
+ 	- daca gaseste MAC-ul prin functia "search_mac" atunci pune MAC-ul gasit in
+ 	- pachet si-l trimite
+
+ 	- altfel, trimite ARP REQUEST prin functia "send_arp_request" catre
+ 	- next_hop-ul gasit prin functia de gasire a celei mai specifice intrare in
+ 	- tabela de rutare
+
+ 	- se reia procesul
+
+
+
+Functia "read_route table" care parseaza tabela de rutare se afla in "parse.c"
+si citeste linie cu linie, desparte linia dupa cele 4 coloane si adauga in Trie
+(implementarea s-a facut cu trie) pe pozitia corecta. Se face asta pana la
+sfarsitul fisierului "rtable.txt", fisierul de citire. De asemenea, am
+implementat si functia de convertire a IP-ului din string in int, exista deja,
+dar n-am fost atent si am facut-o singur.
+
+Functia "send_icmp_packet" care trimite un pachet de timp ICMP cu codul si tipul
+date ca parametru se afla in "packet.c" si creeaza un pachet nou, completeaza
+campurile unui pachet de acest tip si il trimite. Aceasta este folosita atat
+pentru ECHO REPLY, TimeOut si Host Unreachable. Tot in acelasi fisier se afla si
+packet_send care ia ca parametru o coada si o tabela de ARP, functie care
+incearca sa trimita pachetele din coada imediat ce se primeste ARP REPLY in
+main. Aceasta functie parcurge coada, verifica daca se cunoaste MAC-ul. Daca da,
+atunci il trimite completand doar mac-ul destinatie deoarece restul au fost
+completate in main. Daca nu, il pune intr-o coada auxiliara si apoi reface
+coada.
+
+In fisierul "arptable.c" se afla functiile specifice pachetelor ARP. Functia
+"add_arp_entry" careia i se dau ca parametrii tabela ARP, IP-ul si MAC-ul si
+care adauga o intrare in tabela ARP(tabela care este o lista mai exact) la
+final, cu ajutorul functiei auxiliare care creeaza o celula de tip Arp_entry.
+Functia "search_mac" cauta in tabela ARP IP-ul dat ca parametru si intoare
+MAC-ul, se face o parcurgere a listei si cand se gaseste se returneaza MAC-ul
+sau NULL in cazul in care nu se gaseste. Functiile "send_arp_reply" si
+"send_arp_request" trimit ARP REPLY, respectiv ARP REQUEST completand campurile
+unui pachet nou pe care urmeaza sa-l trimita. Functia de "ip_checksum" este cea
+folosita din laborator.
+
+In fisierul "leading.c" se afla doar functia de gasire a celei mai specifice
+intrari din tabela de rutare. Aceasta cauta in O(1) in Trie.
+
+Fisierul "tree.c" este cel care contine informatiile despre Trie. Adaugarea unui
+nod se face prin "addEntry" care apeleaza "AddEntryAux" care cauta nodul la care
+trebuie introdua intrarea din "rtable.txt", o si creeaza in cazul in care nu
+exista, pastrand proprietatile de Trie. Mai mult, se foloseste de "initNode"
+care intoarce un nod gol care se va popula mai tarziu prin "copyRouteInfo" care
+copiaza informatiile in nodul dat ca parametru.
